@@ -1,0 +1,33 @@
+# Ignore sensitive local files
+github_accounts.csv
+project_description.txt
+temp.txt
+
+# OS / editor
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Node
+node_modules/
+dist/
+build/
+.next/
+
+# Go
+bin/
+coverage.out
+
+# Rust
+target/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Logs
+*.log
+
