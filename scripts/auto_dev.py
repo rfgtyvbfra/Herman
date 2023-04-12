@@ -10,13 +10,32 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CSV_PATH = REPO_ROOT / 'github_accounts.csv'
 PROJECT_DOC = REPO_ROOT / 'project_description.txt'
 
-# Phases compressed within 2023-04-01 .. 2024-03-31
-PHASES = [
-    ('init', datetime(2023, 4, 1, 9, 0, 0), datetime(2023, 7, 31, 18, 0, 0)),
-    ('core', datetime(2023, 8, 1, 9, 0, 0), datetime(2024, 1, 31, 18, 0, 0)),
-    ('test_opt', datetime(2024, 2, 1, 9, 0, 0), datetime(2024, 3, 15, 18, 0, 0)),
-    ('docs_wrap', datetime(2024, 3, 16, 9, 0, 0), datetime(2024, 3, 31, 18, 0, 0)),
+# Time window 2023-04-01 .. 2024-03-31; distribute by normalized ratios of 4/10/8/2 months
+TIME_START = datetime(2023, 4, 1, 9, 0, 0)
+TIME_END = datetime(2024, 3, 31, 18, 0, 0)
+
+# Ratios normalized from 4,10,8,2 months → 16.67%, 41.67%, 33.33%, 8.33%
+PHASE_RATIOS = [
+    ('init', 4),
+    ('core', 10),
+    ('test_opt', 8),
+    ('docs_wrap', 2),
 ]
+
+def compute_phases():
+    total_units = sum(x for _, x in PHASE_RATIOS)
+    total_seconds = (TIME_END - TIME_START).total_seconds()
+    phases = []
+    cursor = TIME_START
+    for i, (name, units) in enumerate(PHASE_RATIOS):
+        if i < len(PHASE_RATIOS) - 1:
+            span_seconds = total_seconds * (units / total_units)
+            end = cursor + timedelta(seconds=span_seconds)
+        else:
+            end = TIME_END
+        phases.append((name, cursor, end))
+        cursor = end
+    return phases
 
 random.seed(42)
 
@@ -49,19 +68,15 @@ def assign_commit_targets(accounts):
     return targets
 
 
-def distribute_commits_over_phases(total_commits):
-    # Allocate by rough proportions: init 20%, core 60%, test_opt 15%, docs_wrap 5%
-    weights = {
-        'init': 0.20,
-        'core': 0.60,
-        'test_opt': 0.15,
-        'docs_wrap': 0.05,
-    }
+def distribute_commits_over_phases(total_commits, phases):
+    # Allocate proportionally to phase duration
+    durations = [(name, (end - start).total_seconds()) for name, start, end in phases]
+    total = sum(d for _, d in durations)
     allocation = {}
     remaining = total_commits
-    for i, (name, _, _) in enumerate([(p[0], p[1], p[2]) for p in PHASES]):
-        if i < len(PHASES) - 1:
-            n = int(total_commits * weights[name])
+    for i, (name, dur) in enumerate(durations):
+        if i < len(durations) - 1:
+            n = int(round(total_commits * (dur / total)))
             allocation[name] = n
             remaining -= n
         else:
@@ -157,6 +172,16 @@ type DataAvailability interface {
     Store(chunk []byte) (string, error)
     Sample(cid string, n int) ([][]byte, error)
 }
+""".strip() + "\n")
+
+
+def init_increment(i: int):
+    # Ensure each init commit has a unique code change
+    write_file(REPO_ROOT / f'internal/bootstrap/step_{i}.go', f"""
+package bootstrap
+
+// Step{i} is a bootstrap marker to evolve project scaffolding.
+const Step{i} = {i}
 """.strip() + "\n")
 
 
@@ -285,12 +310,14 @@ func TestExecuteEchoV{i}(t *testing.T) {{
 """.strip() + "\n")
 
 
-def write_docs():
-    write_file(REPO_ROOT / 'README.md', """
+def write_docs(i: int):
+    # mutate README each time so there is always a diff
+    write_file(REPO_ROOT / 'README.md', f"""
 # Herman - Modular Blockchain (Prototype)
 
 This repository contains a compact prototype of a modular blockchain stack with four pluggable layers: Execution, Settlement, Consensus, and Data Availability. Code is intentionally small and incremental to simulate real-world iterative development.
-
+\n
+Status iteration: {i}
 """.strip() + "\n")
     write_file(REPO_ROOT / 'LICENSE', """
 MIT License
@@ -326,11 +353,12 @@ def main():
     targets = assign_commit_targets(accounts)
     total_commits = sum(targets.values())
 
-    allocation = distribute_commits_over_phases(total_commits)
+    phases = compute_phases()
+    allocation = distribute_commits_over_phases(total_commits, phases)
 
     # Build per-phase timelines
     phase_times = {}
-    for name, start, end in PHASES:
+    for name, start, end in phases:
         n = allocation.get(name, 0)
         phase_times[name] = timestamps_between(start, end, n)
 
@@ -353,12 +381,13 @@ def main():
     ensure_go_mod()
 
     # Phase: init - scaffolding
-    for when in phase_times.get('init', []):
+    for idx_init, when in enumerate(phase_times.get('init', [])):
         author = next_author()
         email = author_state[author]['email']
         set_git_user(author, email)
         init_codebase()
-        msg = 'feat: scaffold project structure and core interfaces'
+        init_increment(idx_init)
+        msg = 'feat: scaffold project structure and bootstrap steps'
         stage_and_commit(msg, author, email, when)
 
     # Phase: core features - incremental implementation
@@ -397,11 +426,11 @@ func checksumV{test_i}(b []byte) int {{
         test_i += 1
 
     # Phase: docs and wrap-up
-    for when in phase_times.get('docs_wrap', []):
+    for i_doc, when in enumerate(phase_times.get('docs_wrap', [])):
         author = next_author()
         email = author_state[author]['email']
         set_git_user(author, email)
-        write_docs()
+        write_docs(i_doc)
         msg = 'docs: add README and LICENSE'
         stage_and_commit(msg, author, email, when)
 
