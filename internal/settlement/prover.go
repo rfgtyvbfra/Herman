@@ -22,3 +22,14 @@ func (ProverV5) Finalize(stateRoot string) error {
     }
     return nil
 }
+package settlement
+
+// ProverV9 is a mock prover for settlement proofs.
+type ProverV9 struct{}
+
+func (ProverV9) Finalize(stateRoot string) error {
+    if len(stateRoot) == 0 {
+        return fmt.Errorf("empty state root")
+    }
+    return nil
+}
