@@ -48,3 +48,27 @@ func (m *MemStoreV7) Sample(cid string, n int) ([][]byte, error) {
     }
     return out, nil
 }
+package dataavailability
+
+// MemStoreV11 stores chunks in-memory for tests.
+type MemStoreV11 struct{
+    data map[string][]byte
+}
+
+func (m *MemStoreV11) Store(chunk []byte) (string, error) {
+    if m.data == nil { m.data = make(map[string][]byte) }
+    key := fmt.Sprintf("cid-%d", len(m.data)+11)
+    m.data[key] = chunk
+    return key, nil
+}
+
+func (m *MemStoreV11) Sample(cid string, n int) ([][]byte, error) {
+    if n <= 0 {
+        return nil, fmt.Errorf("n must be > 0")
+    }
+    out := make([][]byte, n)
+    for i := 0; i < n; i++ {
+        out[i] = []byte(cid)
+    }
+    return out, nil
+}
