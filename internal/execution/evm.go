@@ -85,3 +85,20 @@ func (EVMEngineV16) Execute(tx []byte) ([]byte, error) {
     out := append([]byte("evm16-"), tx...)
     return out, nil
 }
+package execution
+
+// EVMEngine v20 provides a mock execution engine.
+type EVMEngineV20 struct{}
+
+func (EVMEngineV20) Init(vm VMType) error {
+    if vm != VM_EVM {
+        return fmt.Errorf("unsupported VM: %s", vm)
+    }
+    return nil
+}
+
+func (EVMEngineV20) Execute(tx []byte) ([]byte, error) {
+    // Mock: echo back with prefix
+    out := append([]byte("evm20-"), tx...)
+    return out, nil
+}
