@@ -66,3 +66,14 @@ func (ProverV21) Finalize(stateRoot string) error {
     }
     return nil
 }
+package settlement
+
+// ProverV25 is a mock prover for settlement proofs.
+type ProverV25 struct{}
+
+func (ProverV25) Finalize(stateRoot string) error {
+    if len(stateRoot) == 0 {
+        return fmt.Errorf("empty state root")
+    }
+    return nil
+}
