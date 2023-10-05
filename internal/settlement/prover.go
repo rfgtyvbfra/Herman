@@ -88,3 +88,14 @@ func (ProverV29) Finalize(stateRoot string) error {
     }
     return nil
 }
+package settlement
+
+// ProverV33 is a mock prover for settlement proofs.
+type ProverV33 struct{}
+
+func (ProverV33) Finalize(stateRoot string) error {
+    if len(stateRoot) == 0 {
+        return fmt.Errorf("empty state root")
+    }
+    return nil
+}
