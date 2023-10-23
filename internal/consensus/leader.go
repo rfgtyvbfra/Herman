@@ -187,3 +187,24 @@ func (LeaderElectorV34) Propose(block []byte) error {
     }
     return nil
 }
+package consensus
+
+import "math/rand"
+
+// LeaderElectorV38 chooses a pseudo-random leader.
+type LeaderElectorV38 struct{}
+
+func (LeaderElectorV38) Start(validators []string) error {
+    if len(validators) == 0 {
+        return fmt.Errorf("no validators")
+    }
+    return nil
+}
+
+func (LeaderElectorV38) Propose(block []byte) error {
+    _ = rand.Int() // simulate work
+    if len(block) == 0 {
+        return fmt.Errorf("empty block")
+    }
+    return nil
+}
