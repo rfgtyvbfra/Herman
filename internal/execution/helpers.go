@@ -61,3 +61,10 @@ func checksumV17(b []byte) int {
     for _, v := range b { s += int(v) }
     return s
 }
+package execution
+
+func checksumV19(b []byte) int {
+    s := 0
+    for _, v := range b { s += int(v) }
+    return s
+}
