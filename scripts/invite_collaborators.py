@@ -5,6 +5,7 @@ import sys
 import urllib.request
 import urllib.error
 from pathlib import Path
+from typing import Optional, Dict
 
 ROOT = Path(__file__).resolve().parents[1]
 CSV_PATH = ROOT / 'github_accounts.csv'
@@ -24,7 +25,7 @@ def owner_token(rows):
     raise SystemExit('owner token not found')
 
 
-def api_request(method: str, url: str, token: str, data: dict | None = None):
+def api_request(method: str, url: str, token: str, data: Optional[Dict] = None):
     req = urllib.request.Request(url, method=method)
     req.add_header('Accept', 'application/vnd.github+json')
     req.add_header('Authorization', f'token {token}')
